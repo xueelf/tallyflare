@@ -1,0 +1,21 @@
+.home-content > .site-section.site-section {
+  width: 100%;
+  max-width: none;
+}
+
+.site-section {
+  width: 100%;
+  max-width: none;
+}
+
+.site-section-title {
+  margin: 1.5rem 0 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--docs-border);
+  color: var(--docs-text-strong);
+  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+

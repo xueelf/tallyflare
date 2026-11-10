@@ -1,0 +1,115 @@
+.example {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 35rem);
+  gap: clamp(2.5rem, 7vw, 7rem);
+  align-items: center;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 2.75rem 0;
+}
+
+.example.is-reverse {
+  grid-template-columns: minmax(0, 35rem) minmax(0, 1fr);
+}
+
+.example.is-reverse .example-copy {
+  order: 2;
+}
+
+.example.is-reverse .example-demo {
+  order: 1;
+}
+
+.example-title {
+  margin: 0 0 0.75rem;
+  color: var(--docs-text-strong);
+  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.example-description {
+  margin: 0;
+  color: var(--docs-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.example-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+  color: var(--docs-accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.example-link:hover {
+  text-decoration: underline;
+}
+
+.example-demo {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--docs-border);
+  border-radius: 0.75rem;
+  background: var(--docs-code-background);
+}
+
+.example-pane {
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.example-pane + .example-pane {
+  border-top: 1px solid var(--docs-border);
+}
+
+.example-code {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--docs-text);
+  font-family: var(--docs-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
+.example-code code {
+  font: inherit;
+}
+
+.example-effect:has(> img) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 10rem;
+}
+
+@media (max-width: 60rem) {
+  .example,
+  .example.is-reverse {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    padding: 2.25rem 0;
+  }
+
+  .example.is-reverse .example-copy,
+  .example.is-reverse .example-demo {
+    order: initial;
+  }
+}
+
+@media (max-width: 40rem) {
+  .example-pane {
+    padding: 1rem;
+  }
+}
