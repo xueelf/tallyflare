@@ -1,0 +1,31 @@
+# Badges
+
+The badge endpoint returns an SVG counter image that can be embedded in a README, blog, or personal page.
+
+## Embed a badge \{#embed-a-badge\}
+
+```md
+![hit counter](https://tally.yuki.sh/counters/github/tallyflare/badge)
+```
+
+The response is an SVG image that works in Markdown and HTML. By default, each badge load records one visit.
+
+The badge endpoint accepts a `padding` parameter with a default of 7. It controls the minimum number of displayed digits and accepts values from 0 to 16.
+
+## Change the theme \{#themes\}
+
+Add a `theme` parameter to change the theme:
+
+```md
+![hit counter](https://tally.yuki.sh/counters/github/tallyflare/badge?theme=miku)
+```
+
+The default theme is `moebooru`. Tallyflare supports the full Moe Counter theme set, including `moebooru`, `gelbooru`, `miku`, and `minecraft`. See [Moe Counter](https://count.getloli.com) for the full list.
+
+An unknown theme returns `400` and does not record a visit.
+
+## Response behavior \{#response-behavior\}
+
+Badge responses use `Content-Type: image/svg+xml; charset=utf-8`, `Cache-Control: no-store`, and CORS headers. `HEAD` does not record a visit or return a body. `OPTIONS` returns the allowed methods.
+
+For the complete response contract, see [API](./api.mdx#svg-counter).

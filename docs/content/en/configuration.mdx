@@ -1,0 +1,44 @@
+# Configuration
+
+Configuration lives in `wrangler.jsonc` and the scripts in `package.json`. Most deployments do not need code changes.
+
+## Wrangler configuration \{#wrangler\}
+
+The commonly used fields in `wrangler.jsonc` are:
+
+| Field                     | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `name`                    | Worker name                                             |
+| `main`                    | Worker entry point                                      |
+| `compatibility_date`      | Workers runtime compatibility date                      |
+| `assets.directory`        | Built deployment directory, `dist`                      |
+| `assets.binding`          | Static assets binding, `ASSETS`                         |
+| `assets.run_worker_first` | Sends `/counters/*` and `/badges/*` to the Worker first |
+| `d1_databases[].binding`  | D1 SQLite binding name, `DB`                            |
+
+## D1 SQLite binding \{#d1-binding\}
+
+The counter Worker needs a D1 SQLite binding named `DB`. For local development, Wrangler manages the database under `.wrangler/state`.
+
+When using the Deploy to Cloudflare button or Wrangler 4.45+ automatic provisioning, `database_id` can be left blank. It is only required when binding an existing D1 SQLite database.
+
+## Common scripts \{#scripts\}
+
+| Script                      | Purpose                                                   |
+| --------------------------- | --------------------------------------------------------- |
+| `bun run dev`               | Build, apply local migrations, and start Miniflare        |
+| `bun run build`             | Generate themes and build the documentation               |
+| `bun run deploy`            | Apply remote migrations and deploy                        |
+| `bun run release`           | Build, apply remote migrations, and deploy                |
+| `bun run db:migrate:local`  | Apply local D1 SQLite migrations                          |
+| `bun run db:migrate:remote` | Apply remote D1 SQLite migrations                         |
+| `bun run check`             | Format, lint, type-check, test, build, smoke, and dry-run |
+| `bun run smoke`             | Start a local Worker and run HTTP smoke tests             |
+
+## Runtime settings \{#runtime-settings\}
+
+The local launcher reads `PORT`. Production does not need it.
+
+The default deployment requires no secrets. Visitor deduplication uses the `CF-Connecting-IP` header provided by Cloudflare.
+
+Theme data is generated into `dist/themes` and served through the `ASSETS` binding. After changing images in `themes/`, run `bun run themes:build` again.
