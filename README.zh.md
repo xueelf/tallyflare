@@ -62,7 +62,18 @@ POST https://tally.yuki.sh/counters/github/tallyflare
 GET https://tally.yuki.sh/counters/github/tallyflare
 ```
 
-`visitor` 是计数器自建立以来出现过的独立客户端 IP 数，不等于人数。JSON 接口支持 `padding` 参数，默认 7，范围 0–16，用来调整 `digits` 的位数。
+`visitor` 是计数器自建立以来出现过的独立客户端 IP 数，不等于人数。迁移后的计数器会保留旧 `visitor` 作为历史基数，同时保留全部旧 IP 指纹。历史基数不保证等于指纹数量。JSON 接口支持 `padding` 参数，默认 7，范围 0–16，用来调整 `digits` 的位数。
+
+## 从旧 KV 迁移
+
+旧版使用 Cloudflare KV。新版提供导出、转换和本地验证步骤：
+
+```sh
+bun run migrate:kv export --namespace-id <KV_NAMESPACE_ID> --output kv.json
+bun run migrate:kv convert kv.json kv-migration --chunk-size 10000
+```
+
+完整流程见 [从 KV 迁移](docs/content/zh/migration.mdx)。
 
 ## 私有部署
 

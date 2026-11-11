@@ -1,0 +1,143 @@
+# 从 KV 迁移
+
+旧版基于 Cloudflare Pages Functions 与 KV。数据保存在 KV 的 `hits:` 键中，新版使用 D1 SQLite。
+
+## 迁移窗口 \{#write-freeze\}
+
+正式迁移需要停止旧版写入：
+
+1. 暂停旧版计数路由，窗口内的请求可以返回维护响应，但不要继续成功计数。
+2. 等待在途请求结束，并留出 KV 最终一致性传播时间。不要依赖固定秒数作为一致性保证。
+3. 导出最终快照。
+4. 导入空的新 D1，核对计数器和指纹数量。
+5. 部署新版 Worker，切换流量，再恢复计数。
+
+导出不是原子快照。旧实例持续写入时，键清单和分批读取的计数值可能来自不同时间。迁移窗口内不要让旧实例继续成功计数，否则这些访问会丢失。
+
+## 数据对应关系 \{#data-mapping\}
+
+旧 KV：
+
+```text
+hits:<namespace>:<name>:visit
+hits:<namespace>:<name>:visitor
+hits:<namespace>:<name>:ip:<ip>
+```
+
+对应 D1：
+
+```text
+counters.namespace
+counters.name
+counters.visit
+counters.visitor
+visitors.fingerprint
+```
+
+`visit` 和 `visitor` 直接迁移。旧 IP 键会转换成 SHA-256 指纹，原始 IP 不写入 D1。
+
+## 导出旧数据 \{#export\}
+
+先登录 Wrangler：
+
+```sh
+bun run wrangler login
+```
+
+使用旧 KV namespace ID 导出：
+
+```sh
+bun run migrate:kv export \
+  --namespace-id <KV_NAMESPACE_ID> \
+  --output kv.json
+```
+
+脚本会先列出所有键，只读取 `visit` 和 `visitor` 的值。IP 键的值只是首次访问时间戳，不需要读取，导出时会保留所有 IP 键。KV 访问发生在 Cloudflare，导出文件保存在本地。
+
+## 生成迁移 SQL \{#generate-sql\}
+
+```sh
+bun run migrate:kv convert kv.json kv-migration --chunk-size 10000
+```
+
+生成前会检查：
+
+- `visit` 存在且为安全整数
+- IP 键都能找到对应的计数器
+
+旧 `visitor` 原样保留。只有 `visitor > visit` 的数据会被截断到 `visit`，并输出警告。IP 键数量不会覆盖旧 `visitor`。
+
+所有 IP 键都会生成 SHA-256 指纹。`kv-migration` 必须是一个尚不存在的目录，脚本会拒绝复用已有目录，避免混入上一次转换的旧分块。
+
+数据量大时使用 `--chunk-size` 拆分 SQL 文件，输出文件名形如：
+
+```text
+kv-migration/migration-001.sql
+kv-migration/migration-002.sql
+kv-migration/migration-003.sql
+```
+
+按编号顺序执行。
+
+生成的 SQL 使用 `INSERT OR IGNORE`，不会覆盖 D1 中已经存在的同名计数器。迁移前应使用空表，或在确认无冲突后再执行。
+
+## 本地验证 \{#verify-locally\}
+
+应用本地表结构：
+
+```sh
+bun run db:migrate:local
+```
+
+按顺序导入本地 D1：
+
+```sh
+for file in kv-migration/migration-*.sql; do
+  bun run wrangler d1 execute DB --local --file="$file" || exit 1
+done
+```
+
+启动本地 Worker：
+
+```sh
+bun run dev
+```
+
+检查：
+
+- JSON 接口返回旧计数
+- SVG 徽章正常渲染
+- 同一 IP 再次访问不会重复增加 `visitor`
+- 不同 IP 仍能正常去重
+
+本地验证不会修改远程 D1。
+
+## 导入远程 D1 \{#apply-remote\}
+
+确认 `wrangler.jsonc` 中的 `database_id` 指向新建的 D1。先应用表结构：
+
+```sh
+bun run db:migrate:remote
+```
+
+按顺序导入数据：
+
+```sh
+for file in kv-migration/migration-*.sql; do
+  bun run wrangler d1 execute DB --remote --file="$file" || exit 1
+done
+```
+
+迁移完成后部署新版 Worker，再切换流量。建议保留旧 KV 一段时间，确认计数和访客去重正常后再删除。
+
+## 注意事项 \{#notes\}
+
+旧键使用冒号拼接。脚本把第一段作为 `namespace`，剩余部分作为 `name`。如果旧 namespace 或 name 本身包含冒号，迁移前需要人工核对。
+
+名称中包含字面 `%2F` 时，访问前需要对数据库中的名称再做一次 URL 编码，例如 `/counters/example/2026%252F09%252F08`。
+
+旧 KV 的读写不是原子操作，历史 `visitor` 计数可能与 IP 键数量不一致。迁移脚本保留旧 `visitor`。只有 `visitor > visit` 时截断到 `visit`。所有 IP 键仍会转换为指纹。
+
+迁移后的计数器保留旧 `visitor` 作为历史基数，并保留全部旧 IP 指纹用于后续去重。历史基数不保证等于已保存的指纹数量。迁移后只有此前未出现的 IP 才会增加 `visitor`。
+
+迁移命令只读取旧 KV，不会修改或删除旧数据。

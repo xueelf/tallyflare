@@ -75,6 +75,8 @@ If `CF-Connecting-IP` is missing, the request still increases `visit` but does n
 
 The database never stores raw IP addresses, only SHA-256 fingerprints. `visitor` counts distinct IPs, not people: multiple users behind one IP may count as one visitor, and one user switching IPs may count as more than one.
 
+Counters migrated from the old KV store keep the old `visitor` as a historical base and keep all old IP fingerprints. The historical base is not guaranteed to equal the number of stored fingerprints; after migration, only previously unseen IPs increase `visitor`.
+
 ## Choosing a namespace \{#choosing-a-namespace\}
 
 `tally.yuki.sh` is my personal instance, and the domain already contains my username. I therefore use platform names such as `github` and `blog` directly as namespaces for my own counters.

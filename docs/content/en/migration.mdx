@@ -1,0 +1,143 @@
+# Migrate from KV
+
+The previous version ran on Cloudflare Pages Functions with KV. Counts were stored under `hits:` keys. The current version uses D1 SQLite.
+
+## Write freeze \{#write-freeze\}
+
+A production migration needs the old instance to stop writing:
+
+1. Pause the old counter route. Requests during the window can return a maintenance response, but must not keep recording visits.
+2. Let in-flight requests finish and allow KV eventual consistency to settle. Do not use a fixed number of seconds as a consistency guarantee.
+3. Export the final snapshot.
+4. Import into the empty new D1 database and verify the counts.
+5. Deploy the new Worker, switch traffic, and resume counting.
+
+The export is not an atomic snapshot. If the old instance keeps writing, the key list and the batched counter reads can come from different points in time. Do not keep recording successful visits during the migration window; those visits would be lost.
+
+## Data mapping \{#data-mapping\}
+
+Old KV keys:
+
+```text
+hits:<namespace>:<name>:visit
+hits:<namespace>:<name>:visitor
+hits:<namespace>:<name>:ip:<ip>
+```
+
+D1 storage:
+
+```text
+counters.namespace
+counters.name
+counters.visit
+counters.visitor
+visitors.fingerprint
+```
+
+`visit` and `visitor` are copied directly. Old IP keys are converted to SHA-256 fingerprints. Raw IP addresses are never written to D1.
+
+## Export old data \{#export\}
+
+Log in with Wrangler first:
+
+```sh
+bun run wrangler login
+```
+
+Export with the old KV namespace ID:
+
+```sh
+bun run migrate:kv export \
+  --namespace-id <KV_NAMESPACE_ID> \
+  --output kv.json
+```
+
+The script lists every key but reads values only for `visit` and `visitor`. IP values are first-visit timestamps and are not needed; every IP key is kept in the snapshot. KV access happens on Cloudflare; the snapshot is written locally.
+
+## Generate migration SQL \{#generate-sql\}
+
+```sh
+bun run migrate:kv convert kv.json kv-migration --chunk-size 10000
+```
+
+The converter checks:
+
+- `visit` exists and is a safe integer
+- Every IP key has a matching counter
+
+The old `visitor` value is preserved. Only `visitor > visit` is clamped to `visit`, with a warning. The number of IP keys does not overwrite the old `visitor` value.
+
+Every IP key becomes a SHA-256 fingerprint. `kv-migration` must not already exist. The script refuses to reuse an output directory so files from an earlier conversion cannot be mixed in.
+
+For large datasets, `--chunk-size` splits the output into files:
+
+```text
+kv-migration/migration-001.sql
+kv-migration/migration-002.sql
+kv-migration/migration-003.sql
+```
+
+Apply them in order.
+
+The generated SQL uses `INSERT OR IGNORE`, so it does not overwrite existing counters with the same namespace and name. Run it against an empty table, or verify that there are no conflicts first.
+
+## Verify locally \{#verify-locally\}
+
+Apply the local schema:
+
+```sh
+bun run db:migrate:local
+```
+
+Import into local D1 in order:
+
+```sh
+for file in kv-migration/migration-*.sql; do
+  bun run wrangler d1 execute DB --local --file="$file" || exit 1
+done
+```
+
+Start the local Worker:
+
+```sh
+bun run dev
+```
+
+Check that:
+
+- JSON returns the old counts
+- SVG badges render
+- Revisiting from the same IP does not increase `visitor`
+- Different IPs still deduplicate correctly
+
+Local verification does not modify remote D1.
+
+## Apply to remote D1 \{#apply-remote\}
+
+Confirm that `database_id` in `wrangler.jsonc` points to the new D1, then apply the schema:
+
+```sh
+bun run db:migrate:remote
+```
+
+Import the data in order:
+
+```sh
+for file in kv-migration/migration-*.sql; do
+  bun run wrangler d1 execute DB --remote --file="$file" || exit 1
+done
+```
+
+Deploy the new Worker after the import and switch traffic. Keep the old KV namespace for a while and delete it only after counts and visitor deduplication have been verified.
+
+## Notes \{#notes\}
+
+Old keys use colon-separated segments. The script treats the first segment as `namespace` and the remainder as `name`. If an old namespace or name contains a colon, check the generated rows manually.
+
+If a stored name contains literal `%2F`, encode the database value again when constructing the URL; for example, `/counters/example/2026%252F09%252F08`.
+
+Old KV reads and writes were not atomic, so the historical `visitor` count may not match the number of IP keys. The converter keeps the old `visitor` value and only clamps it when it is greater than `visit`. All IP keys still become fingerprints.
+
+Migrated counters keep the old `visitor` as a historical base and keep all old IP fingerprints for future deduplication. The historical base is not guaranteed to equal the number of stored fingerprints. After migration, only IPs not seen before increase `visitor`.
+
+The migration commands only read old KV. They never modify or delete it.

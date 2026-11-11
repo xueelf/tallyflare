@@ -62,7 +62,18 @@ The first request creates the counter and returns `201 Created`. Later requests 
 GET https://tally.yuki.sh/counters/github/tallyflare
 ```
 
-`visitor` is the number of distinct client IPs seen since the counter was created. It is not a count of people. JSON endpoints accept a `padding` parameter from 0 to 16 to control the number of digits in `digits`.
+`visitor` is the number of distinct client IPs seen since the counter was created. It is not a count of people. Migrated counters keep the old `visitor` as a historical base and keep all old IP fingerprints; the base is not guaranteed to equal the number of fingerprints. JSON endpoints accept a `padding` parameter from 0 to 16 to control the number of digits in `digits`.
+
+## Migrate from KV
+
+The previous version used Cloudflare KV. The current version provides export, conversion, and local verification steps:
+
+```sh
+bun run migrate:kv export --namespace-id <KV_NAMESPACE_ID> --output kv.json
+bun run migrate:kv convert kv.json kv-migration --chunk-size 10000
+```
+
+See [Migrate from KV](docs/content/en/migration.mdx) for the full flow.
 
 ## Private deployment
 
