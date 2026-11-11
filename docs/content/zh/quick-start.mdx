@@ -1,0 +1,91 @@
+import { Counter } from '../components/counter';
+
+# 快速上手
+
+本页介绍如何选择计数器地址、读取计数、记录访问，以及在页面中嵌入 SVG 徽章。
+
+## 选择计数器地址 \{#choose-a-counter-url\}
+
+计数器地址由命名空间和名称组成：
+
+```text
+https://tally.yuki.sh/counters/:namespace/:name
+```
+
+- `:namespace` 是命名空间
+- `:name` 是计数器名称
+
+当前公共实例部署在 `tally.yuki.sh`，由我维护，域名已经包含我的用户名，因此这里直接使用平台名作为命名空间。
+
+例如，统计 GitHub README 的主页访问量：
+
+```http
+https://tally.yuki.sh/counters/github/tallyflare
+```
+
+![访问计数器](/counters/github/tallyflare/badge)
+
+这张图片直接请求徽章接口，每次加载都会记录一次访问，计数会随访问次数累加。
+
+其他人使用这个实例时，域名里没有各自的用户名，建议把 `@username` 作为命名空间，避免平台名被占用或重名：
+
+```text
+https://tally.yuki.sh/counters/@yourname/github-readme
+https://tally.yuki.sh/counters/@yourname/blog
+```
+
+这里的 `@username` 借鉴了 YouTube、Mastodon 等产品常见的账号路径形式，将用户名放在 `@` 后面，例如 [YouTube 的频道地址](https://support.google.com/youtube/answer/6180214) 是 `https://www.youtube.com/@handle`。Tallyflare 只是借用这种容易辨认的写法，`@` 在命名空间里仍是普通字符，不参与路由解析。
+
+命名空间没有固定格式，名称部分也由自己决定，只要保证完整地址唯一即可。
+
+如果不想使用这个服务，可以把 Tallyflare 部署到自己的 Cloudflare 账号，步骤见 [部署](./deployment.mdx)。
+
+## JSON 接口 \{#json-api\}
+
+用 `GET` 读取当前计数，用 `POST` 记录一次访问：
+
+```http
+GET https://tally.yuki.sh/counters/github/tallyflare
+POST https://tally.yuki.sh/counters/github/tallyflare
+```
+
+接口的 `GET` 请求不会创建或递增计数器。`POST` 请求会在首次访问时创建计数器，并返回更新后的数值。响应中同时包含访问总数和独立 IP 数，以及按默认 `padding=7` 补零后的 `digits`：
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+如果要在自定义页面或脚本中显示计数，可以直接使用 JSON 响应：
+
+<Counter
+  format="json"
+  fallback={<span className="counter-status">暂无计数数据</span>}
+/>
+
+## 嵌入 SVG 图片 \{#embed-as-svg\}
+
+如果只需要在 Markdown 中显示计数，直接插入 SVG 图片：
+
+```md
+![访问计数器](https://tally.yuki.sh/counters/github/tallyflare/badge?padding=10)
+```
+
+效果如下，这里用固定数字 `123456789` 和 `padding=10` 展示十位数字：
+
+![访问计数器](/badges/123456789?padding=10)
+
+添加 `theme` 查询参数可以切换主题：
+
+```md
+![访问计数器（miku 主题）](https://tally.yuki.sh/counters/github/tallyflare/badge?padding=10&theme=miku)
+```
+
+例如这样，主题为 `miku`，同样使用 `padding=10`：
+
+![访问计数器（miku 主题）](/badges/123456789?padding=10&theme=miku)
+
+主题方面，Tallyflare 支持 Moe Counter 的完整主题集，常见的有 `moebooru`、`gelbooru`、`miku` 和 `minecraft`。完整主题见 [Moe Counter](https://count.getloli.com)。未知主题会返回 `400`。

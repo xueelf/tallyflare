@@ -1,0 +1,132 @@
+# API
+
+接口用 `GET` 读取计数，用 `POST` 记录访问。徽章接口每次 `GET` 请求都会记录一次访问。JSON 接口支持可选的 `padding` 查询参数，默认值为 7。
+
+## 接口 \{#endpoints\}
+
+接口格式如下：
+
+```http
+GET  /counters/:namespace/:name
+POST /counters/:namespace/:name
+GET  /counters/:namespace/:name/badge
+```
+
+这些接口都支持 `HEAD`，`OPTIONS` 会返回允许的方法和 CORS 响应头。
+
+## 路径说明 \{#path-parameters\}
+
+| 路径段       | 说明                     |
+| ------------ | ------------------------ |
+| `:namespace` | 命名空间                 |
+| `:name`      | 计数器标识               |
+| `/badge`     | 固定徽章子资源，返回 SVG |
+
+命名空间和名称可以包含 Unicode 和点号。具体限制见 [计数器](./counters.mdx#url-constraints)。百分号编码只解码一次。
+
+## 存储 \{#storage\}
+
+计数器存储在 D1 SQLite。`counters` 表保存 `visit` 总数和 `visitor` 数。`visitors` 表保存每个客户端 IP 的 SHA-256 指纹，用于去重。原始 IP 不会写入数据库。
+
+客户端 IP 从 Cloudflare 注入的 `CF-Connecting-IP` 请求头读取。
+
+## JSON 响应 \{#json-response\}
+
+用 `GET` 读取计数器，用 `POST` 记录一次访问：
+
+```http
+GET https://tally.yuki.sh/counters/github/tallyflare
+POST https://tally.yuki.sh/counters/github/tallyflare
+```
+
+接口的 `GET` 请求不会创建或递增计数器，计数器不存在时返回 `404`。`POST` 请求会在首次访问时创建计数器并返回 `201 Created`。之后返回 `200 OK`，不要求携带请求体。
+
+`padding` 默认是 7，因此响应中还会包含一个补零后的字符串：
+
+```json
+{
+  "visit": 1024,
+  "visitor": 128,
+  "digits": "0001024"
+}
+```
+
+`padding` 的有效范围是 0–16。它只影响 `digits`，不会改变 `visit` 或写入数据库的值。
+
+响应结构：
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+| 字段      | 说明                         |
+| --------- | ---------------------------- |
+| `visit`   | 计数器建立以来的访问总次数   |
+| `visitor` | 访问过该计数器的独立 IP 总数 |
+| `digits`  | 按 `padding` 补零后的字符串  |
+
+| 响应头                          | 值                                |
+| ------------------------------- | --------------------------------- |
+| `Content-Type`                  | `application/json; charset=utf-8` |
+| `Cache-Control`                 | `no-store`                        |
+| `Access-Control-Allow-Origin`   | `*`                               |
+| `Access-Control-Expose-Headers` | `Location`                        |
+
+## SVG 计数器 \{#svg-counter\}
+
+如果只需要在 Markdown 中嵌入一个数字徽章，请求徽章接口即可：
+
+```http
+GET /counters/github/tallyflare/badge
+GET /counters/github/tallyflare/badge?theme=gelbooru
+```
+
+响应为计数器 SVG 图片，适合直接嵌入 README 或网页。
+
+| 响应头                        | 值                             |
+| ----------------------------- | ------------------------------ |
+| `Content-Type`                | `image/svg+xml; charset=utf-8` |
+| `Cache-Control`               | `no-store`                     |
+| `Access-Control-Allow-Origin` | `*`                            |
+
+### 查询参数 \{#query-parameters\}
+
+| 参数      | 默认值     | 说明                                    |
+| --------- | ---------- | --------------------------------------- |
+| `theme`   | `moebooru` | 图片主题，支持 Moe Counter 的所有样式   |
+| `padding` | `7`        | 最少显示位数，不足时补前导零，范围 0–16 |
+
+### 主题 \{#themes\}
+
+内置主题来自 Moe Counter，常见选择包括 `moebooru`、`gelbooru`、`miku`、`minecraft`。
+
+如果传入非法主题值，服务会返回 `400`，不会记录访问。
+
+## 独立徽章 \{#standalone-badge\}
+
+如果只想渲染指定数字，不需要读写真实计数器，可以使用独立徽章接口：
+
+```http
+GET /badges/:visit
+GET /badges/:visit?theme=moebooru
+GET /badges/123456789?padding=10
+```
+
+参数 `visit` 必须是介于 `0` 和 `9007199254740991` 之间的安全整数，`theme` 可选，默认 `moebooru`。`padding` 控制最少显示位数，默认 `7`，设为 `10` 时，`123456789` 会显示为 `0123456789`。该接口只返回 SVG，不读取或写入 D1，也不记录访问。
+
+## 错误响应 \{#error-responses\}
+
+| 状态码 | 响应体                                 | 说明                       |
+| ------ | -------------------------------------- | -------------------------- |
+| `400`  | `{ "error": "..." }`                   | 标识、查询参数或主题非法   |
+| `404`  | `{ "error": "..." }`                   | 计数器不存在或计数路径错误 |
+| `405`  | `{ "error": "Method not allowed" }`    | 请求方法不受支持           |
+| `500`  | `{ "error": "Internal server error" }` | 存储或渲染出现意外错误     |
+
+## 鸣谢 \{#credits\}
+
+主题与生成逻辑受 [Moe Counter](https://github.com/journey-ad/Moe-Counter) 启发。Tallyflare 保留图片计数器的用法，并提供 JSON 响应，脚本和自定义页面可以直接读取计数。
