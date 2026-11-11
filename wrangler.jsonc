@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tallyflare",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-20",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/counters/*", "/badges/*"],
+    "not_found_handling": "404-page",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tallyflare",
+      /*
+       * 本地开发和一键部署不需要 database_id。
+       * 手动首次部署时，创建 D1 后把 database_id 填到这里。
+       */
+      // "database_id": "<DATABASE_ID>",
+    },
+  ],
+}
