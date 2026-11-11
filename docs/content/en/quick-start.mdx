@@ -1,0 +1,91 @@
+import { Counter } from '../components/counter';
+
+# Getting Started
+
+This page explains how to choose a counter URL, read a count, record a visit, and embed an SVG badge.
+
+## Choose a counter URL \{#choose-a-counter-url\}
+
+A counter URL consists of a namespace and a name:
+
+```text
+https://tally.yuki.sh/counters/:namespace/:name
+```
+
+- `:namespace` is the namespace
+- `:name` is the counter name
+
+The public instance is deployed at `tally.yuki.sh` and is maintained by me. The domain already contains my username, so I use platform names as namespaces here.
+
+For example, to count visits to the GitHub README homepage:
+
+```http
+https://tally.yuki.sh/counters/github/tallyflare
+```
+
+![hit counter](/counters/github/tallyflare/badge)
+
+This image requests the badge endpoint directly. Each load records one visit, so the count increases with traffic.
+
+When other people use this instance, their usernames are not part of the domain. In that case, use `@username` as the namespace to avoid platform names being taken or duplicated:
+
+```text
+https://tally.yuki.sh/counters/@yourname/github-readme
+https://tally.yuki.sh/counters/@yourname/blog
+```
+
+The `@username` pattern follows the account paths used by products such as YouTube and Mastodon, where the username follows `@`. For example, a [YouTube channel URL](https://support.google.com/youtube/answer/6180214) is `https://www.youtube.com/@handle`. Tallyflare only borrows this readable form. `@` is still an ordinary character in the namespace and has no routing meaning.
+
+Namespaces have no fixed format. The name is also up to you. All that matters is that the complete URL is unique.
+
+To run your own instance instead, deploy Tallyflare to your Cloudflare account. See [Deployment](./deployment.mdx).
+
+## JSON API \{#json-api\}
+
+Use `GET` to read the current count and `POST` to record a visit:
+
+```http
+GET https://tally.yuki.sh/counters/github/tallyflare
+POST https://tally.yuki.sh/counters/github/tallyflare
+```
+
+The `GET` request never creates or increments a counter. `POST` creates the counter on the first visit and returns the updated values. The response includes the total visit count, the number of distinct client IPs, and the zero-padded `digits` value using the default `padding=7`:
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+To display the count on a custom page or in a script, use the JSON response directly:
+
+<Counter
+  format="json"
+  fallback={<span className="counter-status">Counter data unavailable.</span>}
+/>
+
+## Embed an SVG badge \{#embed-as-svg\}
+
+To display a count in Markdown, insert the SVG image directly:
+
+```md
+![hit counter](https://tally.yuki.sh/counters/github/tallyflare/badge?padding=10)
+```
+
+The result below uses the fixed number `123456789` and `padding=10` to show ten digits:
+
+![hit counter](/badges/123456789?padding=10)
+
+Add a `theme` query parameter to switch themes:
+
+```md
+![hit counter (miku theme)](https://tally.yuki.sh/counters/github/tallyflare/badge?padding=10&theme=miku)
+```
+
+For example, with the `miku` theme and the same `padding=10`:
+
+![hit counter (miku theme)](/badges/123456789?padding=10&theme=miku)
+
+Tallyflare supports the full set of Moe Counter themes, including `moebooru`, `gelbooru`, `miku`, and `minecraft`. See [Moe Counter](https://count.getloli.com) for the full list. Unknown themes return `400`.
