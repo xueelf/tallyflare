@@ -1,0 +1,69 @@
+# Private deployment
+
+To run the counter service independently, you only need a Cloudflare account to deploy Tallyflare under your own domain.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/xueelf/tally-api)
+
+## Prerequisites \{#prerequisites\}
+
+- A Cloudflare account
+- A JavaScript runtime such as Bun or Node.js
+
+The repository scripts use Bun by default. The commands below use Bun as an example. If you use another toolchain, adjust the scripts accordingly.
+
+## One-click deployment \{#one-click-deployment\}
+
+Click the **Deploy to Cloudflare** button above. Cloudflare creates the D1 SQLite database, then Workers Builds runs the repository's `build` and `deploy` scripts in order. `deploy` applies migrations before publishing the Worker. You do not need to create the database manually or fill in `database_id`.
+
+This relies on [Deploy to Cloudflare buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/) and [automatic resource provisioning](https://developers.cloudflare.com/changelog/post/2025-10-24-automatic-resource-provisioning/). `database_id` is the unique identifier of the D1 SQLite database. One-click deployment does not need it; manual CLI deployment requires creating the database and filling in the ID.
+
+## Manual deployment \{#manual-deployment\}
+
+If you prefer the CLI, clone the repository and install dependencies:
+
+```sh
+git clone https://github.com/xueelf/tally-api.git
+cd tally-api
+bun install
+```
+
+If Wrangler is not logged in yet, run:
+
+```sh
+bun run wrangler login
+```
+
+For the first deployment, create and bind the D1 SQLite database:
+
+```sh
+bun run wrangler d1 create tallyflare
+```
+
+Put the returned `database_id` into the `d1_databases` section of `wrangler.jsonc`, then apply the migration:
+
+```sh
+bun run db:migrate:remote
+```
+
+Finally, build and publish the Worker:
+
+```sh
+bun run build
+bun run wrangler deploy
+```
+
+To use an existing D1 SQLite database, skip `d1 create` and put its `database_id` directly into the config before applying migrations. The manual flow does not rely on Wrangler's automatic resource creation.
+
+For each update, run `bun run release`. It builds, applies remote migrations, and deploys the Worker in order. You can also run `bun run build` and `bun run deploy` separately.
+
+`deploy` no longer builds the site. A one-click deployment runs `build` before `deploy`.
+
+## Local development \{#local-development\}
+
+See [Local development](./development.mdx) for local startup, local D1 SQLite state, and Bun/Miniflare details.
+
+## Notes \{#notes\}
+
+If you only need a counter service for your own site, the steps above are enough. You can later change the domain, adjust the copy, or switch themes.
+
+For details about URL rules, response formats, and errors, see [API](./api.mdx).

@@ -1,0 +1,49 @@
+# Local development
+
+Local development needs a JavaScript runtime such as [Bun](https://bun.sh) or [Node.js](https://nodejs.org). A Cloudflare account is not required.
+
+The commands below use Bun as an example, reflecting my personal preference rather than a runtime requirement for the Worker, which runs on Cloudflare Workers. The repository's build, test, and start scripts currently use Bun, so if you use another toolchain, you will need to adjust those scripts.
+
+## Start the Worker \{#start-the-worker\}
+
+First clone the repository and install dependencies:
+
+```sh
+git clone https://github.com/xueelf/tally-api.git
+cd tally-api
+bun install
+```
+
+Start the local server:
+
+```sh
+bun run dev
+```
+
+The script builds the documentation and themes, applies local D1 SQLite migrations, and then starts Miniflare and workerd. It prints the local URL when the server is ready.
+
+To use a fixed port, set `PORT` before the command:
+
+```sh
+PORT=3000 bun run dev
+```
+
+## Local data \{#local-data\}
+
+Local data is stored under `.wrangler/state`. Local development does not need a `database_id` or a remote database.
+
+To apply migrations without starting the server:
+
+```sh
+bun run db:migrate:local
+```
+
+## Restart after changes \{#restart-after-changes\}
+
+The start script does not watch files. After changing Worker code, documentation, or theme images, run `bun run dev` again.
+
+## Why not `wrangler dev` \{#why-not-wrangler-dev\}
+
+Wrangler's development proxy does not work correctly under Bun, so `bun run dev` starts workerd through Miniflare directly and reuses the same Wrangler configuration and bindings.
+
+This script only handles local startup. Migrations, type generation, and deployment still use Wrangler.
