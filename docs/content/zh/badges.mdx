@@ -1,0 +1,31 @@
+# 徽章
+
+徽章接口返回 SVG 计数器图片，适合直接放进 README、博客或个人主页。
+
+## 嵌入徽章 \{#embed-a-badge\}
+
+```md
+![访问计数器](https://tally.yuki.sh/counters/github/tallyflare/badge)
+```
+
+返回的是 SVG 图片，Markdown 和 HTML 都能用。默认情况下，每次加载徽章都会记录一次访问。
+
+徽章接口支持 `padding` 参数，默认 7，用于控制最少显示位数，范围 0–16。
+
+## 切换主题 \{#themes\}
+
+添加 `theme` 参数可以切换主题：
+
+```md
+![访问计数器](https://tally.yuki.sh/counters/github/tallyflare/badge?theme=miku)
+```
+
+默认主题是 `moebooru`。Tallyflare 支持 Moe Counter 的完整主题集，常见的有 `moebooru`、`gelbooru`、`miku` 和 `minecraft`。完整主题见 [Moe Counter](https://count.getloli.com)。
+
+主题不存在时返回 `400`，也不会记录访问。
+
+## 响应行为 \{#response-behavior\}
+
+徽章响应的 `Content-Type` 是 `image/svg+xml; charset=utf-8`，带 `Cache-Control: no-store` 和 CORS 响应头。`HEAD` 不记录访问，也不返回响应体。`OPTIONS` 返回允许的方法。
+
+完整的响应约定见 [API](./api.mdx#svg-counter)。

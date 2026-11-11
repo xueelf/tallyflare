@@ -1,0 +1,44 @@
+# 配置
+
+配置由 `wrangler.jsonc` 和 `package.json` 里的脚本决定。大多数部署不需要改代码。
+
+## Wrangler 配置 \{#wrangler\}
+
+下面列出 `wrangler.jsonc` 中常用的字段：
+
+| 字段                      | 作用                                                        |
+| ------------------------- | ----------------------------------------------------------- |
+| `name`                    | Worker 名称                                                 |
+| `main`                    | Worker 入口                                                 |
+| `compatibility_date`      | Workers 运行时兼容日期                                      |
+| `assets.directory`        | 构建后的部署目录，`dist`                                    |
+| `assets.binding`          | 静态资源绑定，`ASSETS`                                      |
+| `assets.run_worker_first` | 让 `/counters/*` 和 `/badges/*` 先经过 Worker，再查静态资源 |
+| `d1_databases[].binding`  | D1 SQLite 绑定名，`DB`                                      |
+
+## D1 SQLite 绑定 \{#d1-binding\}
+
+计数器 Worker 需要一个名为 `DB` 的 D1 SQLite 绑定。本地开发时，Wrangler 会在 `.wrangler/state` 下管理数据库。
+
+使用 Deploy to Cloudflare 按钮或 Wrangler 4.45+ 的自动创建功能时，`database_id` 可以不填。手动 CLI 首次部署需要先创建 D1 数据库，并把返回的 `database_id` 填入配置。绑定已有数据库时也一样。
+
+## 常用脚本 \{#scripts\}
+
+| 脚本                        | 作用                                         |
+| --------------------------- | -------------------------------------------- |
+| `bun run dev`               | 构建、应用本地迁移并启动 Miniflare           |
+| `bun run build`             | 生成主题并构建文档                           |
+| `bun run deploy`            | 应用远程迁移并部署                           |
+| `bun run release`           | 构建、应用远程迁移并部署                     |
+| `bun run db:migrate:local`  | 应用本地 D1 SQLite 迁移                      |
+| `bun run db:migrate:remote` | 应用远程 D1 SQLite 迁移                      |
+| `bun run check`             | 格式、Lint、类型、测试、构建、冒烟和 dry-run |
+| `bun run smoke`             | 启动本地 Worker 并跑 HTTP 冒烟测试           |
+
+## 运行时设置 \{#runtime-settings\}
+
+本地启动器会读取 `PORT`，生产环境不需要设置。
+
+默认部署不需要任何 secret。访客去重使用 Cloudflare 注入的 `CF-Connecting-IP` 请求头。
+
+主题数据会生成到 `dist/themes`，由 `ASSETS` 绑定提供。修改 `themes/` 里的图片后，运行 `bun run themes:build` 重新生成。

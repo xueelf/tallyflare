@@ -1,0 +1,49 @@
+# 简介
+
+## 什么是 Tallyflare \{#what-is-tallyflare\}
+
+Tallyflare 运行在 Cloudflare Workers 与 D1 SQLite 上，提供 SVG 徽章和 JSON 接口。脚本和自定义页面可以直接读取计数。
+
+公共实例位于 [https://tally.yuki.sh](https://tally.yuki.sh)，可以直接使用，也可以部署到自己的 Cloudflare 账号。
+
+一个计数器就是一个 URL：
+
+```md
+![访问计数器](https://tally.yuki.sh/counters/:namespace/:name/badge)
+```
+
+![访问计数器](/badges/123456789?padding=10)
+
+独立徽章接口用 `padding` 控制显示位数，上面的 `padding=10` 会显示 10 位数字。
+
+同一个计数器还提供 JSON 接口：
+
+```http
+GET https://tally.yuki.sh/counters/:namespace/:name
+```
+
+```typescript
+interface Counter {
+  // 累计访问次数
+  visit: number;
+  // 独立访客数
+  visitor: number;
+  // 按 padding（默认 7）补零后的值
+  digits: string;
+}
+```
+
+`GET` 只读取统计信息，`POST` 会记录一次访问。
+
+## 为什么做这个项目 \{#why-tallyflare\}
+
+在此之前，我一直使用 [LeanCloud](https://leancloud.app/) 记录自己的博客访问数据，并用 [MongoDB Atlas](https://www.mongodb.com/) 搭配 [Moe Counter](https://github.com/journey-ad/Moe-Counter) 为 GitHub 等社区页面提供计数徽章进行美化。但 LeanCloud 在 2026 年 1 月宣布停止对外服务，稳定性也明显下降，于是便有了本项目。
+
+Moe Counter 内置 SQLite 和 MongoDB 两种数据库方案，自部署时需要运行 Node.js 服务，并配置其中一种数据库。Tallyflare 运行在 Cloudflare Workers 上，使用 D1 SQLite，不需要自己维护服务器或数据库，支持一键部署到 Cloudflare，并提供 JSON 接口。除了嵌入 SVG 图片，也可以通过 JSON 接口读取计数。
+
+## 可以做什么 \{#what-you-can-do\}
+
+- 在 Markdown 或 HTML 中插入计数器图片
+- 通过 JSON 读取计数、记录访问
+- 切换内置的 Moe Counter 主题
+- 在 Cloudflare Workers 和 D1 SQLite 上部署自己的实例
