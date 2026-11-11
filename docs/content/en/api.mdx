@@ -1,0 +1,132 @@
+# API
+
+The API uses `GET` to read a count and `POST` to record a visit. The badge endpoint records a visit on every `GET` request. JSON endpoints accept an optional `padding` query parameter with a default of 7.
+
+## Endpoints \{#endpoints\}
+
+The endpoint format is:
+
+```http
+GET  /counters/:namespace/:name
+POST /counters/:namespace/:name
+GET  /counters/:namespace/:name/badge
+```
+
+These endpoints support `HEAD`. `OPTIONS` returns the allowed methods and CORS headers.
+
+## Path parameters \{#path-parameters\}
+
+| Segment      | Description                          |
+| ------------ | ------------------------------------ |
+| `:namespace` | Namespace                            |
+| `:name`      | Counter identifier                   |
+| `/badge`     | Fixed badge subresource. Returns SVG |
+
+Namespaces and names may contain Unicode and dots. See [Counters](./counters.mdx#url-constraints) for the full URL constraints. Percent-encoding is decoded once.
+
+## Storage \{#storage\}
+
+Counters are stored in D1 SQLite. The `counters` table keeps the total `visit` count and the `visitor` count. The `visitors` table keeps a SHA-256 fingerprint of each client IP for deduplication. Raw IP addresses are never written to the database.
+
+The client IP is read from the `CF-Connecting-IP` header provided by Cloudflare.
+
+## JSON response \{#json-response\}
+
+Use `GET` to read a counter and `POST` to record a visit:
+
+```http
+GET https://tally.yuki.sh/counters/github/tallyflare
+POST https://tally.yuki.sh/counters/github/tallyflare
+```
+
+A `GET` request never creates or increments a counter. A missing counter returns `404`. `POST` creates the counter on the first visit and returns `201 Created`. Later requests return `200 OK`. `POST` does not require a request body.
+
+`padding` defaults to 7, so the response also includes a zero-padded string:
+
+```json
+{
+  "visit": 1024,
+  "visitor": 128,
+  "digits": "0001024"
+}
+```
+
+`padding` accepts values from 0 to 16. It only affects `digits` and does not change `visit` or the value stored in the database.
+
+Response structure:
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+| Field     | Description                                         |
+| --------- | --------------------------------------------------- |
+| `visit`   | Total visits recorded since the counter was created |
+| `visitor` | Number of distinct client IPs seen for the counter  |
+| `digits`  | Zero-padded string produced from `padding`          |
+
+| Header                          | Value                             |
+| ------------------------------- | --------------------------------- |
+| `Content-Type`                  | `application/json; charset=utf-8` |
+| `Cache-Control`                 | `no-store`                        |
+| `Access-Control-Allow-Origin`   | `*`                               |
+| `Access-Control-Expose-Headers` | `Location`                        |
+
+## SVG counter \{#svg-counter\}
+
+To embed a numeric badge in Markdown, request the badge endpoint:
+
+```http
+GET /counters/github/tallyflare/badge
+GET /counters/github/tallyflare/badge?theme=gelbooru
+```
+
+The response is an SVG counter image that can be embedded directly in a README or webpage.
+
+| Header                        | Value                          |
+| ----------------------------- | ------------------------------ |
+| `Content-Type`                | `image/svg+xml; charset=utf-8` |
+| `Cache-Control`               | `no-store`                     |
+| `Access-Control-Allow-Origin` | `*`                            |
+
+### Query parameters \{#query-parameters\}
+
+| Parameter | Default    | Description                                     |
+| --------- | ---------- | ----------------------------------------------- |
+| `theme`   | `moebooru` | Counter theme. Supports every Moe Counter style |
+| `padding` | `7`        | Minimum displayed digits, 0–16. Pads with zeros |
+
+### Themes \{#themes\}
+
+The built-in themes come from Moe Counter. Common choices include `moebooru`, `gelbooru`, `miku`, and `minecraft`.
+
+An invalid theme returns `400` and does not record a visit.
+
+## Standalone badge \{#standalone-badge\}
+
+To render a specific number without reading or writing a real counter, use the standalone badge endpoint:
+
+```http
+GET /badges/:visit
+GET /badges/:visit?theme=moebooru
+GET /badges/123456789?padding=10
+```
+
+`visit` must be a safe integer between `0` and `9007199254740991`. `theme` is optional and defaults to `moebooru`. `padding` controls the minimum displayed digits and defaults to `7`. With `padding=10`, `123456789` is rendered as `0123456789`. This endpoint only returns SVG. It never reads or writes D1 and does not record a visit.
+
+## Error responses \{#error-responses\}
+
+| Status | Response body                          | Description                         |
+| ------ | -------------------------------------- | ----------------------------------- |
+| `400`  | `{ "error": "..." }`                   | Invalid identifier, query, or theme |
+| `404`  | `{ "error": "..." }`                   | Counter not found or malformed path |
+| `405`  | `{ "error": "Method not allowed" }`    | Unsupported method                  |
+| `500`  | `{ "error": "Internal server error" }` | Storage or rendering failure        |
+
+## Credits \{#credits\}
+
+The themes and rendering approach are inspired by [Moe Counter](https://github.com/journey-ad/Moe-Counter). Tallyflare keeps the image-counter workflow and adds a JSON response so scripts and custom pages can read the count directly.

@@ -1,0 +1,92 @@
+# Counters
+
+Every counter consists of a namespace and a name:
+
+```text
+https://tally.yuki.sh/counters/:namespace/:name
+```
+
+The namespace groups related counters, and the name identifies a counter within that namespace. For example, to count visits to a GitHub README:
+
+```http
+https://tally.yuki.sh/counters/github/readme
+```
+
+## URL constraints \{#url-constraints\}
+
+`namespace` and `name` are URL path segments, so they follow URL encoding rules. MDN explains the relevant behavior in [What is a URL?](https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL) and [`decodeURIComponent()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent).
+
+The server decodes each segment once, then applies these routing checks:
+
+- The decoded value is 1 to 128 characters long
+- It is not empty or whitespace-only
+- It is not `.` or `..`
+- It does not contain `/`, `\`, or control characters
+- Unicode and dots are allowed
+
+These limits exist for routing. They are not naming rules. The database only requires both columns and a unique combination. Length and character checks happen in the application.
+
+Percent-encoding is decoded once. An encoded slash such as `%2F` is rejected after decoding. A dot is ordinary data and needs no extra escaping.
+
+## Read and record \{#read-and-record\}
+
+A `GET` request only reads the counter. It does not create or increment it:
+
+```http
+GET https://tally.yuki.sh/counters/github/readme
+```
+
+A `POST` request records one visit:
+
+```http
+POST https://tally.yuki.sh/counters/github/readme
+```
+
+The first `POST` creates the counter and returns `201 Created`. Later requests return `200 OK`. If the counter does not exist, `GET` returns `404`. `POST` does not require a request body.
+
+The response contains three values:
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+`visit` is the total number of recorded visits. `visitor` is the number of distinct client IPs that have visited this counter. `digits` is `visit` padded with leading zeros according to `padding`.
+
+JSON requests use a default `padding` of 7. You can change it with a query parameter in the range 0–16. `padding` only affects `digits` and does not change `visit` or the value stored in the database.
+
+## Visitor deduplication \{#visitor-deduplication\}
+
+Each time a visit is recorded, the Worker reads the `CF-Connecting-IP` header provided by Cloudflare, hashes it with SHA-256, and writes the fingerprint to the current counter's `visitors` table.
+
+Within a counter, each fingerprint is stored only once:
+
+- New fingerprint: `visit` increases by 1 and `visitor` increases by 1
+- Existing fingerprint: `visit` increases by 1 and `visitor` stays the same
+
+So `visit` is the number of requests that recorded a visit, while `visitor` is the number of distinct IPs that have visited the counter.
+
+Visitor records are independent for each counter. If the same IP visits two counters, it counts as one `visitor` for each counter.
+
+If `CF-Connecting-IP` is missing, the request still increases `visit` but does not increase `visitor`.
+
+The database never stores raw IP addresses, only SHA-256 fingerprints. `visitor` counts distinct IPs, not people: multiple users behind one IP may count as one visitor, and one user switching IPs may count as more than one.
+
+## Choosing a namespace \{#choosing-a-namespace\}
+
+`tally.yuki.sh` is my personal instance, and the domain already contains my username. I therefore use platform names such as `github` and `blog` directly as namespaces for my own counters.
+
+Other users share this domain, and their usernames are not part of it. They should put their unique username in the namespace, for example `@yourname`:
+
+```text
+https://tally.yuki.sh/counters/@yourname/blog
+```
+
+A namespace only needs to be unique. Its format is up to you. `@username` is only a recommended form, and `@` has no special meaning.
+
+Namespaces have no registration, reservation, or access control. Anyone can request the same counter URL, so a namespace is not proof of ownership.
+
+If you need isolated data or your own domain, you can [deploy your own instance](./deployment.mdx).

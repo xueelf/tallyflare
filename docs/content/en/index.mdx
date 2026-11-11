@@ -1,0 +1,95 @@
+---
+nav:
+  - label: Guide
+    sidebar:
+      - label: Start
+        items:
+          - href: /en/introduction
+          - href: /en/quick-start
+      - label: Basics
+        items:
+          - href: /en/counters
+          - href: /en/badges
+      - label: Advanced
+        items:
+          - label: Development
+            href: /en/development
+          - label: Deployment
+            href: /en/deployment
+  - label: Reference
+    sidebar:
+      - label: API and configuration
+        items:
+          - href: /en/api
+          - href: /en/configuration
+
+hero:
+  actions:
+    - label: Getting Started
+      href: /en/quick-start
+    - label: Deploy
+      href: /en/deployment
+    - label: API
+      href: /en/api
+
+features:
+  - title: Markdown badges
+    description: Paste the badge URL into Markdown or HTML. A GET request records a visit.
+  - title: Bundled themes
+    description: Includes multiple Moe Counter themes, switchable with the theme parameter.
+  - title: JSON API
+    description: Returns visit, visitor, and digits for custom components and scripts.
+  - title: Workers and D1
+    description: No server to maintain. Counts are stored in D1 SQLite.
+---
+
+import { Features, Hero } from 'phyllo-theme-docs';
+
+import { Counter } from '../components/counter';
+import { Example } from '../components/home/example';
+import { Section } from '../components/home/section';
+import { Themes } from '../components/home/themes';
+
+<Hero />
+
+<Section title="Usage">
+  <Example
+    title="JSON counts"
+    description="Return structured counts for custom components, scripts, and automation."
+    href="/en/api"
+    label="View the API"
+    source="GET https://tally.yuki.sh/counters/github/tallyflare"
+  >
+    <Counter
+      format="json"
+      fallback={
+        <span className="counter-status">Counter data unavailable.</span>
+      }
+    />
+  </Example>
+  <Example
+    title="SVG badges"
+    description="Embed a badge in a README, blog, or any page that supports Markdown."
+    href="/en/badges"
+    label="View the badge guide"
+    source="GET https://tally.yuki.sh/counters/github/tallyflare/badge"
+    reverse
+  >
+    <Counter
+      format="svg"
+      theme="moebooru"
+      fallback={
+        <span className="counter-status">Counter data unavailable.</span>
+      }
+    />
+  </Example>
+</Section>
+
+<Section title="Moe Counter themes">
+  <Themes>
+    Themes come from [Moe Counter](https://github.com/journey-ad/Moe-Counter).
+    See the [official docs](https://count.getloli.com) for more.
+  </Themes>
+</Section>
+
+<Features />
