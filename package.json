@@ -17,6 +17,7 @@
     "format:check": "prettier \"**/*.{json,jsonc,md,mdx,ts,tsx,yaml,yml}\" --check",
     "lint": "eslint --cache",
     "lint:fix": "eslint --fix --cache",
+    "migrate:kv": "bun scripts/migrate.ts",
     "prepare": "husky",
     "release": "bun run build && bun run deploy",
     "smoke": "bun scripts/smoke.ts",
