@@ -1,0 +1,49 @@
+# Introduction
+
+## What is Tallyflare \{#what-is-tallyflare\}
+
+Tallyflare runs on Cloudflare Workers and D1 SQLite. It provides SVG badges and a JSON API, so scripts and custom pages can read counts directly.
+
+The public instance is at [https://tally.yuki.sh](https://tally.yuki.sh). You can use it directly or deploy Tallyflare to your own Cloudflare account.
+
+A counter is just a URL:
+
+```md
+![hit counter](https://tally.yuki.sh/counters/:namespace/:name/badge)
+```
+
+![hit counter](/badges/123456789?padding=10)
+
+The standalone badge endpoint uses `padding` to control how many digits are shown. The `padding=10` above renders a ten-digit value.
+
+The same counter also has a JSON API:
+
+```http
+GET https://tally.yuki.sh/counters/:namespace/:name
+```
+
+```typescript
+interface Counter {
+  // Total recorded visits
+  visit: number;
+  // Distinct visitors
+  visitor: number;
+  // Zero-padded visit value, using padding (default 7)
+  digits: string;
+}
+```
+
+`GET` only reads the counter. `POST` records a visit.
+
+## Why Tallyflare \{#why-tallyflare\}
+
+Before Tallyflare, I used [LeanCloud](https://leancloud.app/) to track visits to my blog and [MongoDB Atlas](https://www.mongodb.com/) with [Moe Counter](https://github.com/journey-ad/Moe-Counter) to render counter badges for GitHub and other community pages. When LeanCloud announced in January 2026 that it would stop offering its public service, its reliability had also started to decline, so I built this project.
+
+Moe Counter supports SQLite and MongoDB. Self-hosting it requires running a Node.js service and configuring one of those databases. Tallyflare runs on Cloudflare Workers with D1 SQLite, so there is no server or database to maintain. It also supports one-click deployment to Cloudflare and provides a JSON API. In addition to embedding an SVG image, scripts and custom pages can read the count through JSON.
+
+## What you can do \{#what-you-can-do\}
+
+- Add a counter image to Markdown or HTML
+- Read counts and record visits through JSON
+- Switch between the bundled Moe Counter themes
+- Deploy your own instance on Cloudflare Workers and D1 SQLite
