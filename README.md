@@ -62,7 +62,7 @@ The first request creates the counter and returns `201 Created`. Later requests 
 GET https://tally.yuki.sh/counters/github/tallyflare
 ```
 
-`visitor` is the number of distinct client IPs seen since the counter was created. It is not a count of people. JSON endpoints accept a `padding` parameter from 0 to 16 to control the number of digits in `digits`.
+`visitor` is the number of distinct client IPs seen since the counter was created. It is not a count of people. Migrated counters keep the old `visitor` as a historical base and keep all old IP fingerprints; the base is not guaranteed to equal the number of fingerprints. JSON endpoints accept a `padding` parameter from 0 to 16 to control the number of digits in `digits`.
 
 ## Private deployment
 
@@ -81,7 +81,7 @@ Before deploying manually, prepare:
 - A Cloudflare account
 - A JavaScript runtime such as [Bun](https://bun.sh) or [Node.js](https://nodejs.org)
 
-The commands below use Bun as an example, reflecting my personal preference rather than a runtime requirement for the Worker, which runs on Cloudflare Workers. The repository's build, test, and start scripts currently use Bun, so if you use another toolchain, you will need to adjust those scripts.
+The commands below use Bun as an example, reflecting my personal preference rather than a runtime requirement for the Worker, which runs on Cloudflare Workers. The repository's build and test scripts currently use Bun, so if you use another toolchain, you will need to adjust those scripts.
 
 ```sh
 git clone https://github.com/xueelf/tally-api.git
@@ -89,18 +89,20 @@ cd tally-api
 bun install
 ```
 
-After installing dependencies, start the local server:
+After installing dependencies, initialize the local database, build the static assets, and start the local server:
 
 ```sh
-bun run dev
+bun run db:migrate:local
+bun run build
+bunx wrangler dev
 ```
 
-The server prints its actual address when ready. To use a fixed port, set `PORT` before the command, for example `PORT=3000 bun run dev`.
+To use a fixed port, run `bunx wrangler dev --port 3000`.
 
 For the first manual deployment, create and bind the D1 SQLite database first:
 
 ```sh
-bun run wrangler d1 create tallyflare
+bunx wrangler d1 create tallyflare
 ```
 
 Put the returned `database_id` into the `d1_databases` section of `wrangler.jsonc`, apply the migration, then build and deploy:
@@ -108,7 +110,7 @@ Put the returned `database_id` into the `d1_databases` section of `wrangler.json
 ```sh
 bun run db:migrate:remote
 bun run build
-bun run wrangler deploy
+bunx wrangler deploy
 ```
 
 For later updates, run `bun run release` to build, apply remote migrations, and deploy the Worker. See the [private deployment guide](docs/content/en/deployment.mdx) for the full steps.

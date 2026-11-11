@@ -24,20 +24,18 @@ When using the Deploy to Cloudflare button or Wrangler 4.45+ automatic provision
 
 ## Common scripts \{#scripts\}
 
-| Script                      | Purpose                                                   |
-| --------------------------- | --------------------------------------------------------- |
-| `bun run dev`               | Build, apply local migrations, and start Miniflare        |
-| `bun run build`             | Generate themes and build the documentation               |
-| `bun run deploy`            | Apply remote migrations and deploy                        |
-| `bun run release`           | Build, apply remote migrations, and deploy                |
-| `bun run db:migrate:local`  | Apply local D1 SQLite migrations                          |
-| `bun run db:migrate:remote` | Apply remote D1 SQLite migrations                         |
-| `bun run check`             | Format, lint, type-check, test, build, smoke, and dry-run |
-| `bun run smoke`             | Start a local Worker and run HTTP smoke tests             |
+| Script                      | Purpose                                            |
+| --------------------------- | -------------------------------------------------- |
+| `bun run build`             | Generate themes and build the documentation        |
+| `bun run deploy`            | Apply remote migrations and deploy                 |
+| `bun run release`           | Build, apply remote migrations, and deploy         |
+| `bun run db:migrate:local`  | Apply local D1 SQLite migrations                   |
+| `bun run db:migrate:remote` | Apply remote D1 SQLite migrations                  |
+| `bun run check`             | Format, lint, type-check, test, build, and dry-run |
 
 ## Runtime settings \{#runtime-settings\}
 
-The local launcher reads `PORT`. Production does not need it.
+For local development, pass `--port` to `bunx wrangler dev`. Production does not need it.
 
 The default deployment requires no secrets. Visitor deduplication uses the `CF-Connecting-IP` header provided by Cloudflare.
 

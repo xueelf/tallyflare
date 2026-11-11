@@ -24,20 +24,18 @@
 
 ## 常用脚本 \{#scripts\}
 
-| 脚本                        | 作用                                         |
-| --------------------------- | -------------------------------------------- |
-| `bun run dev`               | 构建、应用本地迁移并启动 Miniflare           |
-| `bun run build`             | 生成主题并构建文档                           |
-| `bun run deploy`            | 应用远程迁移并部署                           |
-| `bun run release`           | 构建、应用远程迁移并部署                     |
-| `bun run db:migrate:local`  | 应用本地 D1 SQLite 迁移                      |
-| `bun run db:migrate:remote` | 应用远程 D1 SQLite 迁移                      |
-| `bun run check`             | 格式、Lint、类型、测试、构建、冒烟和 dry-run |
-| `bun run smoke`             | 启动本地 Worker 并跑 HTTP 冒烟测试           |
+| 脚本                        | 作用                                   |
+| --------------------------- | -------------------------------------- |
+| `bun run build`             | 生成主题并构建文档                     |
+| `bun run deploy`            | 应用远程迁移并部署                     |
+| `bun run release`           | 构建、应用远程迁移并部署               |
+| `bun run db:migrate:local`  | 应用本地 D1 SQLite 迁移                |
+| `bun run db:migrate:remote` | 应用远程 D1 SQLite 迁移                |
+| `bun run check`             | 格式、Lint、类型、测试、构建和 dry-run |
 
 ## 运行时设置 \{#runtime-settings\}
 
-本地启动器会读取 `PORT`，生产环境不需要设置。
+本地开发通过 `bunx wrangler dev --port` 指定端口，生产环境不需要设置。
 
 默认部署不需要任何 secret。访客去重使用 Cloudflare 注入的 `CF-Connecting-IP` 请求头。
 

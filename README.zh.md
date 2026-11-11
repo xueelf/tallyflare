@@ -62,7 +62,7 @@ POST https://tally.yuki.sh/counters/github/tallyflare
 GET https://tally.yuki.sh/counters/github/tallyflare
 ```
 
-`visitor` 是计数器自建立以来出现过的独立客户端 IP 数，不等于人数。JSON 接口支持 `padding` 参数，默认 7，范围 0–16，用来调整 `digits` 的位数。
+`visitor` 是计数器自建立以来出现过的独立客户端 IP 数，不等于人数。迁移后的计数器会保留旧 `visitor` 作为历史基数，同时保留全部旧 IP 指纹。历史基数不保证等于指纹数量。JSON 接口支持 `padding` 参数，默认 7，范围 0–16，用来调整 `digits` 的位数。
 
 ## 私有部署
 
@@ -81,7 +81,7 @@ Tallyflare 运行于 Cloudflare Workers，使用 D1 SQLite 存储数据。可以
 - 一个 Cloudflare 账号
 - 一个 JavaScript 运行环境，例如 [Bun](https://bun.sh) 或 [Node.js](https://nodejs.org)
 
-下面的命令以 Bun 为例，这是我个人的使用习惯。Worker 本身运行在 Cloudflare Workers 上，不依赖 Bun。仓库里的构建、测试和启动脚本目前使用 Bun，换成其他工具链时需要自行调整。
+下面的命令以 Bun 为例，这是我个人的使用习惯。Worker 本身运行在 Cloudflare Workers 上，不依赖 Bun。仓库里的构建和测试脚本目前使用 Bun，换成其他工具链时需要自行调整。
 
 ```sh
 git clone https://github.com/xueelf/tally-api.git
@@ -89,18 +89,20 @@ cd tally-api
 bun install
 ```
 
-安装依赖后，启动本地服务：
+安装依赖后，初始化本地数据库、构建静态资源并启动本地服务：
 
 ```sh
-bun run dev
+bun run db:migrate:local
+bun run build
+bunx wrangler dev
 ```
 
-服务启动后会输出实际地址。需要固定端口时，可以在命令前设置 `PORT`，例如 `PORT=3000 bun run dev`。
+需要固定端口时，运行 `bunx wrangler dev --port 3000`。
 
 首次手动部署时，先创建 D1 SQLite 数据库并绑定：
 
 ```sh
-bun run wrangler d1 create tallyflare
+bunx wrangler d1 create tallyflare
 ```
 
 把输出的 `database_id` 填入 `wrangler.jsonc` 的 `d1_databases` 配置，然后应用迁移，再构建和发布：
@@ -108,7 +110,7 @@ bun run wrangler d1 create tallyflare
 ```sh
 bun run db:migrate:remote
 bun run build
-bun run wrangler deploy
+bunx wrangler deploy
 ```
 
 之后更新时运行 `bun run release`，它会构建、应用远程迁移并部署 Worker。完整步骤见 [私有部署文档](docs/content/zh/deployment.mdx)。
