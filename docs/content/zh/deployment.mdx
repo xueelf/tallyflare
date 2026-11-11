@@ -1,0 +1,69 @@
+# 私有部署
+
+如果你希望独立运行计数服务，只需要一个 Cloudflare 账号，就可以把 Tallyflare 部署到自己的域名下。
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/xueelf/tally-api)
+
+## 准备工作 \{#prerequisites\}
+
+- 一个 Cloudflare 账号
+- JavaScript 运行环境，例如 Bun 或 Node.js
+
+仓库脚本默认使用 Bun，以下命令以 Bun 为例。使用其他工具链时，需要相应调整脚本。
+
+## 一键部署 \{#one-click-deployment\}
+
+点击上方的 **Deploy to Cloudflare** 按钮。Cloudflare 会创建 D1 SQLite 数据库，再由 Workers Builds 依次运行 `build` 和 `deploy`。`deploy` 会先应用迁移，再发布 Worker。你不需要手动创建数据库，也不需要填写 `database_id`。
+
+这依赖 [Deploy to Cloudflare buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/) 与 [自动资源创建](https://developers.cloudflare.com/changelog/post/2025-10-24-automatic-resource-provisioning/)。`database_id` 是 D1 SQLite 数据库的唯一标识。一键部署不需要配置。手动 CLI 部署需要先创建数据库并填入该 ID。
+
+## 手动部署 \{#manual-deployment\}
+
+如果更习惯 CLI，先克隆仓库并安装依赖：
+
+```sh
+git clone https://github.com/xueelf/tally-api.git
+cd tally-api
+bun install
+```
+
+如果 Wrangler 尚未登录，执行：
+
+```sh
+bun run wrangler login
+```
+
+首次部署时，先创建并绑定 D1 SQLite：
+
+```sh
+bun run wrangler d1 create tallyflare
+```
+
+把输出的 `database_id` 填入 `wrangler.jsonc` 的 `d1_databases` 配置，然后应用迁移：
+
+```sh
+bun run db:migrate:remote
+```
+
+最后构建并发布 Worker：
+
+```sh
+bun run build
+bun run wrangler deploy
+```
+
+如果要绑定已有的 D1 SQLite 数据库，跳过 `d1 create`，直接把该数据库的 `database_id` 填入配置，再执行迁移。手动流程不依赖 Wrangler 的自动资源创建。
+
+之后每次更新都可以运行 `bun run release`，它会按顺序构建、应用远程迁移并部署 Worker。也可以分别执行 `bun run build` 和 `bun run deploy`。
+
+`deploy` 不再包含构建步骤。Cloudflare 一键部署会先运行 `build`，再运行 `deploy`。
+
+## 本地开发 \{#local-development\}
+
+本地启动、D1 SQLite 状态和 Bun/Miniflare 相关说明见 [本地开发](./development.mdx)。
+
+## 补充 \{#notes\}
+
+如果只是为了搭建自己的访问计数器，以上步骤就已经足够了。后续可以根据需要更换域名、调整文案或修改主题。
+
+关于路径规则、返回格式及错误响应的详细说明，请参阅 [API](./api.mdx)。
