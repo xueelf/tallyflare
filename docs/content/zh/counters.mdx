@@ -1,0 +1,92 @@
+# 计数器
+
+每个计数器由命名空间和名称组成：
+
+```text
+https://tally.yuki.sh/counters/:namespace/:name
+```
+
+命名空间用来归类相关计数器，名称用来区分同一个命名空间里的不同计数器。例如给 GitHub README 计数：
+
+```http
+https://tally.yuki.sh/counters/github/readme
+```
+
+## URL 地址限制 \{#url-constraints\}
+
+`namespace` 和 `name` 是 URL 路径段，遵循 URL 的编码规则。MDN 的 [URL 介绍](https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL) 和 [decodeURIComponent()](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent) 有相关说明。
+
+服务端会先解码一次，再做路由校验：
+
+- 解码后长度为 1 到 128 个字符
+- 不能为空，也不能只包含空白字符
+- 不能是 `.` 或 `..`
+- 不能包含 `/`、`\` 或控制字符
+- 可以使用 Unicode 和点号
+
+这些限制用于路由解析，不是命名规范。数据库只要求两列存在且组合唯一，长度和字符检查由应用层完成。
+
+百分号编码只会解码一次。像 `%2F` 这样的编码斜杠，解码后仍然会被拒绝。点号只是普通字符，不需要额外转义。
+
+## 读取与记录 \{#read-and-record\}
+
+接口的 `GET` 请求只读取，不创建也不递增：
+
+```http
+GET https://tally.yuki.sh/counters/github/readme
+```
+
+接口的 `POST` 请求记录一次访问：
+
+```http
+POST https://tally.yuki.sh/counters/github/readme
+```
+
+第一次 `POST` 会创建计数器并返回 `201 Created`，之后返回 `200 OK`。计数器不存在时，`GET` 返回 `404`。`POST` 不要求请求体。
+
+响应里有三个值：
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+  digits: string;
+};
+```
+
+响应中的 `visit` 是访问总次数，`visitor` 是访问过这个计数器的不同客户端 IP 数量，`digits` 是 `visit` 按 `padding` 补零后的字符串。
+
+JSON 接口的 `padding` 默认是 7，也可以通过查询参数修改，范围 0–16。它只影响 `digits`，不会改变 `visit` 或写入数据库的值。
+
+## 访客去重 \{#visitor-deduplication\}
+
+每次记录访问时，Worker 会读取 Cloudflare 注入的 `CF-Connecting-IP`，计算 SHA-256 指纹，并写入当前计数器的 `visitors` 表。
+
+同一个计数器里，一个指纹只保存一次：
+
+- 新指纹：`visit` 加 1，`visitor` 加 1
+- 已存在的指纹：`visit` 加 1，`visitor` 不变
+
+因此，`visit` 是记录访问的请求次数，`visitor` 是访问过这个计数器的独立 IP 数。
+
+不同计数器的访客记录相互独立。同一个 IP 访问两个计数器，会在两边各算一个 `visitor`。
+
+缺少 `CF-Connecting-IP` 时，请求仍然会增加 `visit`，但不会增加 `visitor`。
+
+原始 IP 不会写入数据库，只保存 SHA-256 指纹。`visitor` 按 IP 去重，不等于真实人数：多个用户共用同一个 IP 时可能只算一个，同一个用户切换 IP 后也可能被算作多个。
+
+## 命名空间怎么选 \{#choosing-a-namespace\}
+
+当前 `tally.yuki.sh` 是我的个人实例，域名已经包含用户名，因此我的自用计数器直接使用 `github`、`blog` 等平台名作为命名空间。
+
+其他使用者共用这个域名，建议把自己的唯一用户名放进命名空间，例如 `@yourname`：
+
+```text
+https://tally.yuki.sh/counters/@yourname/blog
+```
+
+命名空间只需要保证唯一，格式不限。`@username` 只是推荐写法，`@` 没有特殊含义。
+
+命名空间没有注册、预留或访问控制。任何人都能请求同一个计数器地址，不要把命名空间当作所有权凭证。
+
+如果需要独立数据或自己的域名，可以 [部署自己的实例](./deployment.mdx)。

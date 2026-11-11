@@ -1,0 +1,49 @@
+# 本地开发
+
+本地开发需要一个 JavaScript 运行环境，例如 [Bun](https://bun.sh) 或 [Node.js](https://nodejs.org)。本地开发不需要 Cloudflare 账号。
+
+下面的命令以 Bun 为例，这是我个人的使用习惯。Worker 本身运行在 Cloudflare Workers 上，不依赖 Bun。仓库里的构建、测试和启动脚本目前使用 Bun，换成其他工具链时需要自行调整。
+
+## 启动 \{#start-the-worker\}
+
+先克隆仓库并安装依赖：
+
+```sh
+git clone https://github.com/xueelf/tally-api.git
+cd tally-api
+bun install
+```
+
+启动本地服务：
+
+```sh
+bun run dev
+```
+
+这个脚本会构建文档和主题、应用本地 D1 SQLite 迁移，然后启动 Miniflare 和 workerd。准备好后会输出本地地址。
+
+需要固定端口时，在命令前设置 `PORT`：
+
+```sh
+PORT=3000 bun run dev
+```
+
+## 本地数据 \{#local-data\}
+
+本地数据保存在 `.wrangler/state`。本地开发不需要 `database_id`，也不需要远程数据库。
+
+只应用迁移、不启动服务时，可以运行：
+
+```sh
+bun run db:migrate:local
+```
+
+## 修改后重启 \{#restart-after-changes\}
+
+启动脚本不会监听文件变化。修改 Worker 代码、文档或主题图片后，需要重新运行 `bun run dev`。
+
+## 为什么不用 `wrangler dev` \{#why-not-wrangler-dev\}
+
+由于 Wrangler 的开发代理在 Bun 下无法正常工作，`bun run dev` 直接用 Miniflare 启动 workerd，并复用同一份 Wrangler 配置和绑定。
+
+这个脚本只负责本地启动。迁移、类型生成和部署仍然使用 Wrangler。

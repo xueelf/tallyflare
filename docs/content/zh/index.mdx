@@ -1,0 +1,90 @@
+---
+nav:
+  - label: 指南
+    sidebar:
+      - label: 开始
+        items:
+          - href: /zh/introduction
+          - href: /zh/quick-start
+      - label: 基础
+        items:
+          - href: /zh/counters
+          - href: /zh/badges
+      - label: 进阶
+        items:
+          - label: 开发
+            href: /zh/development
+          - label: 部署
+            href: /zh/deployment
+  - label: 参考
+    sidebar:
+      - label: 接口与配置
+        items:
+          - href: /zh/api
+          - href: /zh/configuration
+
+hero:
+  actions:
+    - label: 快速上手
+      href: /zh/quick-start
+    - label: 部署
+      href: /zh/deployment
+    - label: API
+      href: /zh/api
+
+features:
+  - title: Markdown 徽章
+    description: 将图片地址插入 Markdown 或网页，GET 请求会记录一次访问。
+  - title: 内置主题
+    description: 内置多款 Moe Counter 主题，可通过 theme 参数切换。
+  - title: JSON 接口
+    description: 返回 visit、visitor 和 digits，可用于自定义组件或脚本。
+  - title: Workers 与 D1
+    description: 无需自建服务器，计数存储在 D1 SQLite。
+---
+
+import { Features, Hero } from 'phyllo-theme-docs';
+
+import { Counter } from '../components/counter';
+import { Example } from '../components/home/example';
+import { Section } from '../components/home/section';
+import { Themes } from '../components/home/themes';
+
+<Hero />
+
+<Section title="使用方式">
+  <Example
+    title="JSON 计数"
+    description="返回结构化计数，可接入自定义组件、脚本或自动化流程。"
+    href="/zh/api"
+    label="查看 API 文档"
+    source="GET https://tally.yuki.sh/counters/github/tallyflare"
+  >
+    <Counter
+      format="json"
+      fallback={<span className="counter-status">暂无计数数据</span>}
+    />
+  </Example>
+  <Example
+    title="SVG 徽章"
+    description="以图片形式嵌入 README、博客或支持 Markdown 的页面。"
+    href="/zh/badges"
+    label="查看徽章文档"
+    source="GET https://tally.yuki.sh/counters/github/tallyflare/badge"
+    reverse
+  >
+    <Counter
+      format="svg"
+      fallback={<span className="counter-status">暂无计数数据</span>}
+    />
+  </Example>
+</Section>
+
+<Section title="主题">
+  <Themes>
+    主题来自 [Moe Counter](https://github.com/journey-ad/Moe-Counter)，你可以在
+    [官方文档](https://count.getloli.com) 查看更多。
+  </Themes>
+</Section>
+
+<Features />
