@@ -1,5 +1,6 @@
 {
   "name": "tallyflare",
+  "version": "1.0.0",
   "private": true,
   "description": "A hit counter on Cloudflare Workers and D1, with SVG badges and JSON counts.",
   "license": "MIT",
