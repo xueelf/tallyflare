@@ -60,10 +60,12 @@ export function useCounter({
   namespace = 'github',
   name = 'tallyflare',
   padding,
+  enabled = true,
 }: {
   namespace?: string;
   name?: string;
   padding?: number;
+  enabled?: boolean;
 } = {}): CounterState {
   const [state, setState] = useState<CounterState>({
     counter: null,
@@ -76,6 +78,10 @@ export function useCounter({
   const path = `/counters/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}${query}`;
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     let active = true;
     setState({ counter: null, status: 'loading' });
 
@@ -97,7 +103,7 @@ export function useCounter({
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [enabled, path]);
 
   return state;
 }

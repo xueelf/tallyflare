@@ -65,6 +65,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="json"
+      readonly
       fallback={
         <span className="counter-status">Counter data unavailable.</span>
       }
@@ -80,6 +81,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="svg"
+      readonly={false}
       theme="moebooru"
       fallback={
         <span className="counter-status">Counter data unavailable.</span>

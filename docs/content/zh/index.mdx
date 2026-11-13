@@ -65,6 +65,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="json"
+      readonly
       fallback={<span className="counter-status">暂无计数数据</span>}
     />
   </Example>
@@ -78,6 +79,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="svg"
+      readonly={false}
       fallback={<span className="counter-status">暂无计数数据</span>}
     />
   </Example>
