@@ -16,8 +16,6 @@ nav:
             href: /en/development
           - label: Deployment
             href: /en/deployment
-          - label: Migrate from KV
-            href: /en/migration
   - label: Reference
     sidebar:
       - label: API and configuration
@@ -65,6 +63,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="json"
+      readonly
       fallback={
         <span className="counter-status">Counter data unavailable.</span>
       }
@@ -80,6 +79,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="svg"
+      readonly={false}
       theme="moebooru"
       fallback={
         <span className="counter-status">Counter data unavailable.</span>

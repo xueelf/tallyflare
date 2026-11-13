@@ -16,8 +16,6 @@ nav:
             href: /zh/development
           - label: 部署
             href: /zh/deployment
-          - label: 从 KV 迁移
-            href: /zh/migration
   - label: 参考
     sidebar:
       - label: 接口与配置
@@ -65,6 +63,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="json"
+      readonly
       fallback={<span className="counter-status">暂无计数数据</span>}
     />
   </Example>
@@ -78,6 +77,7 @@ import { Themes } from '../components/home/themes';
   >
     <Counter
       format="svg"
+      readonly={false}
       fallback={<span className="counter-status">暂无计数数据</span>}
     />
   </Example>

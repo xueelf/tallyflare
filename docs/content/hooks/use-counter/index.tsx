@@ -13,8 +13,6 @@ export interface CounterState {
   status: CounterStatus;
 }
 
-const cache = new Map<string, Promise<Counter | null>>();
-
 function isCounter(value: unknown): value is Counter {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -27,13 +25,7 @@ function isCounter(value: unknown): value is Counter {
 }
 
 function loadCounter(path: string): Promise<Counter | null> {
-  const cached = cache.get(path);
-
-  if (cached) {
-    return cached;
-  }
-
-  const request = fetch(path, { cache: 'no-store' }).then(async response => {
+  return fetch(path, { cache: 'no-store' }).then(async response => {
     if (response.status === 404) {
       return null;
     }
@@ -50,20 +42,18 @@ function loadCounter(path: string): Promise<Counter | null> {
 
     return data;
   });
-
-  cache.set(path, request);
-  request.catch(() => cache.delete(path));
-  return request;
 }
 
 export function useCounter({
   namespace = 'github',
   name = 'tallyflare',
   padding,
+  enabled = true,
 }: {
   namespace?: string;
   name?: string;
   padding?: number;
+  enabled?: boolean;
 } = {}): CounterState {
   const [state, setState] = useState<CounterState>({
     counter: null,
@@ -76,6 +66,10 @@ export function useCounter({
   const path = `/counters/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}${query}`;
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     let active = true;
     setState({ counter: null, status: 'loading' });
 
@@ -97,7 +91,7 @@ export function useCounter({
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [enabled, path]);
 
   return state;
 }
