@@ -26,6 +26,6 @@ An unknown theme returns `400` and does not record a visit.
 
 ## Response behavior \{#response-behavior\}
 
-Badge responses use `Content-Type: image/svg+xml; charset=utf-8`, `Cache-Control: no-store`, and CORS headers. `HEAD` does not record a visit or return a body. `OPTIONS` returns the allowed methods.
+Badge responses use `Content-Type: image/svg+xml; charset=utf-8`, `Cache-Control: max-age=0, no-cache, no-store, must-revalidate`, and CORS headers. `HEAD` does not record a visit or return a body. `OPTIONS` returns the allowed methods.
 
 For the complete response contract, see [API](./api.mdx#svg-counter).

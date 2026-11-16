@@ -87,11 +87,11 @@ GET /counters/github/tallyflare/badge?theme=gelbooru
 
 响应为计数器 SVG 图片，适合直接嵌入 README 或网页。
 
-| 响应头                        | 值                             |
-| ----------------------------- | ------------------------------ |
-| `Content-Type`                | `image/svg+xml; charset=utf-8` |
-| `Cache-Control`               | `no-store`                     |
-| `Access-Control-Allow-Origin` | `*`                            |
+| 响应头                        | 值                                               |
+| ----------------------------- | ------------------------------------------------ |
+| `Content-Type`                | `image/svg+xml; charset=utf-8`                   |
+| `Cache-Control`               | `max-age=0, no-cache, no-store, must-revalidate` |
+| `Access-Control-Allow-Origin` | `*`                                              |
 
 ### 查询参数 \{#query-parameters\}
 

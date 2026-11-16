@@ -67,6 +67,8 @@ function jsonHeaders(): Record<string, string> {
 function svgHeaders(): Record<string, string> {
   return {
     ...BASE_HEADERS,
+    // 兼容 GitHub Camo 的图片缓存
+    'Cache-Control': 'max-age=0, no-cache, no-store, must-revalidate',
     'Content-Type': 'image/svg+xml; charset=utf-8',
   };
 }
@@ -381,7 +383,7 @@ export function createCounterHandler(
       response = errorResponse(500, 'Internal server error');
     }
 
-    // HEAD 响应不带正文。
+    // HEAD 响应不带正文
     return request.method === 'HEAD'
       ? new Response(null, {
           status: response.status,

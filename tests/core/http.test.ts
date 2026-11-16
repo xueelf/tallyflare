@@ -146,13 +146,24 @@ test('CORS 与缓存响应头', async () => {
   );
   const read = await handle(request('/counters/site/page'));
   const svg = await handle(request('/counters/site/page/badge'));
+  const head = await handle(
+    request('/counters/site/page/badge', { method: 'HEAD' }),
+  );
 
-  for (const response of [created, read, svg]) {
+  for (const response of [created, read, svg, head]) {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   }
 
+  for (const response of [created, read]) {
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  }
+
+  for (const response of [svg, head]) {
+    expect(response.headers.get('Cache-Control')).toBe(
+      'max-age=0, no-cache, no-store, must-revalidate',
+    );
+  }
   expect(created.headers.get('Access-Control-Expose-Headers')).toBe('Location');
   expect(created.headers.get('Location')).toBe('/counters/site/page');
 });

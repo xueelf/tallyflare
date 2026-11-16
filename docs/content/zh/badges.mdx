@@ -26,6 +26,6 @@
 
 ## 响应行为 \{#response-behavior\}
 
-徽章响应的 `Content-Type` 是 `image/svg+xml; charset=utf-8`，带 `Cache-Control: no-store` 和 CORS 响应头。`HEAD` 不记录访问，也不返回响应体。`OPTIONS` 返回允许的方法。
+徽章响应的 `Content-Type` 是 `image/svg+xml; charset=utf-8`，带 `Cache-Control: max-age=0, no-cache, no-store, must-revalidate` 和 CORS 响应头。`HEAD` 不记录访问，也不返回响应体。`OPTIONS` 返回允许的方法。
 
 完整的响应约定见 [API](./api.mdx#svg-counter)。
